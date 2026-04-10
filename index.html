@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가계부 - Personal Finance Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --card-hover: #22263a;
+  --border: #2a2e3f;
+  --text: #e4e6ef;
+  --text-muted: #8b8fa3;
+  --income: #4ade80;
+  --income-bg: rgba(74,222,128,0.12);
+  --expense: #f87171;
+  --expense-bg: rgba(248,113,113,0.12);
+  --balance: #60a5fa;
+  --balance-bg: rgba(96,165,250,0.12);
+  --accent: #818cf8;
+  --accent-bg: rgba(129,140,248,0.12);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
+.container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #818cf8, #60a5fa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 16px;
+}
+.month-nav button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.month-nav button:hover { background: var(--border); color: var(--text); }
+.month-nav span { font-size: 16px; font-weight: 600; min-width: 120px; text-align: center; }
+
+/* Summary Cards */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.card-value { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+.card-value.income { color: var(--income); }
+.card-value.expense { color: var(--expense); }
+.card-value.balance { color: var(--balance); }
+.card-change { font-size: 12px; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+.card-change.up { background: var(--income-bg); color: var(--income); }
+.card-change.down { background: var(--expense-bg); color: var(--expense); }
+.card-icon {
+  width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; margin-bottom: 12px;
+}
+.card-icon.income-icon { background: var(--income-bg); }
+.card-icon.expense-icon { background: var(--expense-bg); }
+.card-icon.balance-icon { background: var(--balance-bg); }
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+.chart-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+.chart-container { position: relative; width: 100%; }
+.chart-container.doughnut { max-width: 280px; margin: 0 auto; }
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+}
+.stat-card .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); margin: 8px 0 4px; }
+.stat-card .stat-label { font-size: 13px; color: var(--text-muted); }
+.stat-card .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* Transaction Table */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  overflow-x: auto;
+}
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.table-header h3 { font-size: 16px; font-weight: 600; }
+.filter-btns { display: flex; gap: 8px; }
+.filter-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-btn.active, .filter-btn:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 12px 16px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge.income { background: var(--income-bg); color: var(--income); }
+.badge.expense { background: var(--expense-bg); color: var(--expense); }
+.amount.income { color: var(--income); font-weight: 600; }
+.amount.expense { color: var(--expense); font-weight: 600; }
+.category-tag {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+}
+.empty-state p { margin-top: 8px; font-size: 14px; }
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 32px;
+}
+footer span { color: var(--accent); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .charts-grid { grid-template-columns: 1fr; }
+  header h1 { font-size: 22px; }
+  .card-value { font-size: 22px; }
+  .container { padding: 16px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>My Finance Tracker</h1>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">&larr;</button>
+      <span id="currentMonth"></span>
+      <button onclick="changeMonth(1)">&rarr;</button>
+    </div>
+  </header>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="card">
+      <div class="card-icon income-icon">+</div>
+      <div class="card-label">이번 달 수입</div>
+      <div class="card-value income" id="totalIncome">₩0</div>
+      <div class="card-change" id="incomeChange"></div>
+    </div>
+    <div class="card">
+      <div class="card-icon expense-icon">-</div>
+      <div class="card-label">이번 달 지출</div>
+      <div class="card-value expense" id="totalExpense">₩0</div>
+      <div class="card-change" id="expenseChange"></div>
+    </div>
+    <div class="card">
+      <div class="card-icon balance-icon">=</div>
+      <div class="card-label">잔액</div>
+      <div class="card-value balance" id="totalBalance">₩0</div>
+      <div class="card-change" id="balanceChange"></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>지출 카테고리별 비율</h3>
+      <div class="chart-container doughnut"><canvas id="expenseDoughnut"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>수입 카테고리별 비율</h3>
+      <div class="chart-container doughnut"><canvas id="incomeDoughnut"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>월별 수입/지출 추이</h3>
+      <div class="chart-container"><canvas id="monthlyTrend"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>일별 누적 잔액</h3>
+      <div class="chart-container"><canvas id="dailyBalance"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">저축률</div>
+      <div class="stat-value" id="savingsRate">0%</div>
+      <div class="stat-sub">수입 대비 잔액</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">일평균 지출</div>
+      <div class="stat-value" id="dailyAvg">₩0</div>
+      <div class="stat-sub" id="dailyAvgSub"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">최대 지출 카테고리</div>
+      <div class="stat-value" id="topCategory">-</div>
+      <div class="stat-sub" id="topCategorySub"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">고정비 비율</div>
+      <div class="stat-value" id="fixedRatio">0%</div>
+      <div class="stat-sub">주거+통신+구독</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">거래 건수</div>
+      <div class="stat-value" id="txCount">0</div>
+      <div class="stat-sub" id="txCountSub"></div>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="table-card">
+    <div class="table-header">
+      <h3>거래 내역</h3>
+      <div class="filter-btns">
+        <button class="filter-btn active" onclick="setFilter('all', this)">전체</button>
+        <button class="filter-btn" onclick="setFilter('income', this)">수입</button>
+        <button class="filter-btn" onclick="setFilter('expense', this)">지출</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>날짜</th><th>분류</th><th>카테고리</th><th>내용</th><th style="text-align:right">금액</th></tr>
+      </thead>
+      <tbody id="txBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <p style="font-size:24px;">📋</p>
+      <p>아직 거래 내역이 없습니다</p>
+      <p>스크린샷이나 텍스트로 수입/지출을 공유해주세요!</p>
+    </div>
+  </div>
+
+  <footer>
+    Powered by <span>Claude</span> &middot; 마지막 업데이트: <span id="lastUpdate"></span>
+  </footer>
+</div>
+
+<!--
+  === FINANCE DATA ===
+  Claude가 이 영역의 JSON 데이터를 업데이트합니다.
+  직접 수정하지 마세요.
+-->
+<script id="financeData" type="application/json">
+[
+  {"date":"2026-04-01","type":"income","category":"급여","description":"4월 급여","amount":3500000},
+  {"date":"2026-04-02","type":"expense","category":"주거비","description":"월세","amount":700000},
+  {"date":"2026-04-02","type":"expense","category":"통신비","description":"휴대폰 요금","amount":55000},
+  {"date":"2026-04-03","type":"expense","category":"식비","description":"점심 김치찌개","amount":9000},
+  {"date":"2026-04-03","type":"expense","category":"카페/음료","description":"스타벅스 아메리카노","amount":4500},
+  {"date":"2026-04-04","type":"expense","category":"교통비","description":"지하철 충전","amount":50000},
+  {"date":"2026-04-05","type":"expense","category":"식비","description":"저녁 삼겹살","amount":35000},
+  {"date":"2026-04-05","type":"expense","category":"구독서비스","description":"넷플릭스","amount":17000},
+  {"date":"2026-04-06","type":"expense","category":"쇼핑","description":"무선 이어폰","amount":89000},
+  {"date":"2026-04-07","type":"expense","category":"식비","description":"점심 비빔밥","amount":8500},
+  {"date":"2026-04-07","type":"expense","category":"문화/여가","description":"영화 관람","amount":14000},
+  {"date":"2026-04-08","type":"expense","category":"식비","description":"편의점 간식","amount":5200},
+  {"date":"2026-04-08","type":"income","category":"부수입","description":"프리랜서 디자인 작업","amount":500000},
+  {"date":"2026-04-09","type":"expense","category":"카페/음료","description":"투썸 라떼","amount":5800},
+  {"date":"2026-04-09","type":"expense","category":"식비","description":"점심 돈까스","amount":11000},
+  {"date":"2026-04-10","type":"expense","category":"의료","description":"약국 감기약","amount":8000}
+]
+</script>
+
+<script>
+// ===== CORE ENGINE =====
+const COLORS = ['#818cf8','#60a5fa','#4ade80','#fbbf24','#f87171','#a78bfa','#34d399','#fb923c','#e879f9','#38bdf8','#facc15','#f472b6'];
+const FIXED_CATEGORIES = ['주거비','통신비','구독서비스'];
+
+let data = JSON.parse(document.getElementById('financeData').textContent);
+let currentDate = new Date();
+let currentFilter = 'all';
+let charts = {};
+
+function getMonthData(year, month) {
+  return data.filter(d => {
+    const dt = new Date(d.date);
+    return dt.getFullYear() === year && dt.getMonth() === month;
+  });
+}
+
+function getAllMonths() {
+  const months = new Set();
+  data.forEach(d => {
+    const dt = new Date(d.date);
+    months.add(`${dt.getFullYear()}-${String(dt.getMonth()).padStart(2,'0')}`);
+  });
+  return [...months].sort();
+}
+
+function fmt(n) {
+  return '₩' + Math.abs(n).toLocaleString('ko-KR');
+}
+
+function changeMonth(delta) {
+  currentDate.setMonth(currentDate.getMonth() + delta);
+  render();
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function calcChange(current, previous) {
+  if (previous === 0) return { text: '첫 달', cls: 'up' };
+  const pct = ((current - previous) / previous * 100).toFixed(1);
+  const sign = pct >= 0 ? '+' : '';
+  return { text: `전월 대비 ${sign}${pct}%`, cls: pct >= 0 ? 'up' : 'down' };
+}
+
+function groupByCategory(items) {
+  const map = {};
+  items.forEach(d => { map[d.category] = (map[d.category] || 0) + d.amount; });
+  return Object.entries(map).sort((a,b) => b[1] - a[1]);
+}
+
+// ===== RENDER =====
+function render() {
+  const y = currentDate.getFullYear();
+  const m = currentDate.getMonth();
+  const monthStr = `${y}년 ${m + 1}월`;
+  document.getElementById('currentMonth').textContent = monthStr;
+
+  const md = getMonthData(y, m);
+  const prevMd = getMonthData(m === 0 ? y-1 : y, m === 0 ? 11 : m-1);
+
+  const income = md.filter(d=>d.type==='income').reduce((s,d)=>s+d.amount,0);
+  const expense = md.filter(d=>d.type==='expense').reduce((s,d)=>s+d.amount,0);
+  const balance = income - expense;
+  const prevIncome = prevMd.filter(d=>d.type==='income').reduce((s,d)=>s+d.amount,0);
+  const prevExpense = prevMd.filter(d=>d.type==='expense').reduce((s,d)=>s+d.amount,0);
+
+  document.getElementById('totalIncome').textContent = fmt(income);
+  document.getElementById('totalExpense').textContent = fmt(expense);
+  document.getElementById('totalBalance').textContent = fmt(balance);
+
+  const ic = calcChange(income, prevIncome);
+  const ec = calcChange(expense, prevExpense);
+  const bc = calcChange(balance, prevIncome - prevExpense);
+  document.getElementById('incomeChange').textContent = ic.text;
+  document.getElementById('incomeChange').className = 'card-change ' + ic.cls;
+  document.getElementById('expenseChange').textContent = ec.text;
+  document.getElementById('expenseChange').className = 'card-change ' + (expense > prevExpense ? 'down' : 'up');
+  document.getElementById('balanceChange').textContent = bc.text;
+  document.getElementById('balanceChange').className = 'card-change ' + bc.cls;
+
+  // Stats
+  const savingsRate = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
+  document.getElementById('savingsRate').textContent = savingsRate + '%';
+
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const today = new Date();
+  const elapsedDays = (y === today.getFullYear() && m === today.getMonth()) ? today.getDate() : daysInMonth;
+  const dailyAvg = elapsedDays > 0 ? Math.round(expense / elapsedDays) : 0;
+  document.getElementById('dailyAvg').textContent = fmt(dailyAvg);
+  document.getElementById('dailyAvgSub').textContent = `${elapsedDays}일 기준`;
+
+  const expenseByCategory = groupByCategory(md.filter(d=>d.type==='expense'));
+  if (expenseByCategory.length > 0) {
+    document.getElementById('topCategory').textContent = expenseByCategory[0][0];
+    document.getElementById('topCategorySub').textContent = fmt(expenseByCategory[0][1]);
+  } else {
+    document.getElementById('topCategory').textContent = '-';
+    document.getElementById('topCategorySub').textContent = '';
+  }
+
+  const fixedExpense = md.filter(d=>d.type==='expense' && FIXED_CATEGORIES.includes(d.category)).reduce((s,d)=>s+d.amount,0);
+  const fixedRatio = expense > 0 ? ((fixedExpense / expense) * 100).toFixed(1) : 0;
+  document.getElementById('fixedRatio').textContent = fixedRatio + '%';
+
+  document.getElementById('txCount').textContent = md.length;
+  document.getElementById('txCountSub').textContent = `수입 ${md.filter(d=>d.type==='income').length}건 / 지출 ${md.filter(d=>d.type==='expense').length}건`;
+
+  renderCharts(y, m, md);
+  renderTable();
+
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleDateString('ko-KR');
+}
+
+function renderTable() {
+  const y = currentDate.getFullYear();
+  const m = currentDate.getMonth();
+  let md = getMonthData(y, m);
+  if (currentFilter !== 'all') md = md.filter(d => d.type === currentFilter);
+  md.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  const tbody = document.getElementById('txBody');
+  const empty = document.getElementById('emptyState');
+
+  if (md.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = md.map(d => `
+    <tr>
+      <td>${d.date.slice(5).replace('-','/')}</td>
+      <td><span class="badge ${d.type}">${d.type === 'income' ? '수입' : '지출'}</span></td>
+      <td><span class="category-tag">${d.category}</span></td>
+      <td>${d.description}</td>
+      <td style="text-align:right" class="amount ${d.type}">${d.type === 'income' ? '+' : '-'}${fmt(d.amount)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderCharts(y, m, md) {
+  // Destroy previous
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  Chart.defaults.color = '#8b8fa3';
+  Chart.defaults.borderColor = '#2a2e3f';
+
+  // Expense Doughnut
+  const expCat = groupByCategory(md.filter(d=>d.type==='expense'));
+  if (expCat.length > 0) {
+    charts.expDoughnut = new Chart(document.getElementById('expenseDoughnut'), {
+      type: 'doughnut',
+      data: {
+        labels: expCat.map(c=>c[0]),
+        datasets: [{ data: expCat.map(c=>c[1]), backgroundColor: COLORS.slice(0, expCat.length), borderWidth: 0 }]
+      },
+      options: {
+        cutout: '65%',
+        plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } } }
+      }
+    });
+  }
+
+  // Income Doughnut
+  const incCat = groupByCategory(md.filter(d=>d.type==='income'));
+  if (incCat.length > 0) {
+    charts.incDoughnut = new Chart(document.getElementById('incomeDoughnut'), {
+      type: 'doughnut',
+      data: {
+        labels: incCat.map(c=>c[0]),
+        datasets: [{ data: incCat.map(c=>c[1]), backgroundColor: COLORS.slice(0, incCat.length), borderWidth: 0 }]
+      },
+      options: {
+        cutout: '65%',
+        plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } } }
+      }
+    });
+  }
+
+  // Monthly Trend (last 6 months)
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(y, m - i, 1);
+    months.push({ year: d.getFullYear(), month: d.getMonth(), label: `${d.getMonth()+1}월` });
+  }
+  const trendIncome = months.map(mm => getMonthData(mm.year, mm.month).filter(d=>d.type==='income').reduce((s,d)=>s+d.amount,0));
+  const trendExpense = months.map(mm => getMonthData(mm.year, mm.month).filter(d=>d.type==='expense').reduce((s,d)=>s+d.amount,0));
+
+  charts.monthly = new Chart(document.getElementById('monthlyTrend'), {
+    type: 'bar',
+    data: {
+      labels: months.map(mm=>mm.label),
+      datasets: [
+        { label: '수입', data: trendIncome, backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 6 },
+        { label: '지출', data: trendExpense, backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 6 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 8 } } },
+      scales: {
+        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#2a2e3f' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Daily Balance Line
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const dailyLabels = [];
+  const dailyBalances = [];
+  let runningBalance = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayTx = data.filter(t => t.date === dateStr);
+    dayTx.forEach(t => { runningBalance += t.type === 'income' ? t.amount : -t.amount; });
+    dailyLabels.push(d + '일');
+    dailyBalances.push(runningBalance);
+  }
+
+  charts.daily = new Chart(document.getElementById('dailyBalance'), {
+    type: 'line',
+    data: {
+      labels: dailyLabels,
+      datasets: [{
+        label: '누적 잔액',
+        data: dailyBalances,
+        borderColor: '#60a5fa',
+        backgroundColor: 'rgba(96,165,250,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+        pointHoverRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#2a2e3f' } },
+        x: { grid: { display: false }, ticks: { maxTicksToLimit: 10 } }
+      }
+    }
+  });
+}
+
+// Init
+render();
+</script>
+</body>
+</html>
