@@ -209,6 +209,49 @@ tr:hover td { background: rgba(99,102,241,0.03); }
 }
 .empty-state p { margin-top: 8px; font-size: 14px; }
 
+/* AI 조언 카드 */
+.advice-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 32px;
+  border-left: 4px solid var(--accent);
+}
+.advice-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.advice-icon {
+  font-size: 18px;
+  color: var(--accent);
+}
+.advice-header h3 { font-size: 16px; font-weight: 600; flex: 1; }
+.advice-date { font-size: 12px; color: var(--text-muted); }
+.advice-body { display: flex; flex-direction: column; gap: 10px; }
+.advice-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.advice-item .advice-emoji { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.advice-item.positive { border-left: 3px solid var(--income); }
+.advice-item.warning { border-left: 3px solid #f59e0b; }
+.advice-item.tip { border-left: 3px solid var(--accent); }
+
+@media (max-width: 480px) {
+  .advice-card { padding: 16px; }
+  .advice-item { font-size: 13px; padding: 10px 12px; }
+}
+
 /* Footer */
 footer {
   text-align: center;
@@ -390,6 +433,16 @@ footer span { color: var(--accent); }
     </div>
   </div>
 
+  <!-- AI 소비 조언 -->
+  <div class="advice-card" id="adviceCard">
+    <div class="advice-header">
+      <span class="advice-icon">✦</span>
+      <h3>Claude 소비 조언</h3>
+      <span class="advice-date" id="adviceDate"></span>
+    </div>
+    <div class="advice-body" id="adviceBody"></div>
+  </div>
+
   <!-- Transactions Table -->
   <div class="table-card">
     <div class="table-header">
@@ -417,6 +470,21 @@ footer span { color: var(--accent); }
     Powered by <span>Claude</span> &middot; 마지막 업데이트: <span id="lastUpdate"></span>
   </footer>
 </div>
+
+<!--
+  === ADVICE DATA ===
+  Claude가 업데이트할 때마다 소비 조언을 갱신합니다.
+-->
+<script id="adviceData" type="application/json">
+{
+  "date": "2026-04-10",
+  "items": [
+    {"type":"warning","emoji":"🍼","text":"육아용품(분유) 지출이 이번 달 전체의 61%를 차지하고 있습니다. 정기구독이나 대용량 묶음 구매로 단가를 낮출 수 있는지 확인해보세요."},
+    {"type":"positive","emoji":"🛒","text":"식재료를 쿠팡 로켓프레시로 한 번에 묶어서 구매했습니다. 배송비 절약과 함께 계획적인 장보기를 잘 실천하고 있습니다."},
+    {"type":"tip","emoji":"📊","text":"현재 수입 내역이 없어 잔액이 마이너스 상태입니다. 급여나 수입이 들어오면 꼭 추가해주세요. 정확한 저축률 분석이 가능해집니다."}
+  ]
+}
+</script>
 
 <!--
   === FINANCE DATA ===
@@ -721,8 +789,23 @@ function renderCharts(y, m, md) {
   });
 }
 
+// ===== ADVICE RENDER =====
+function renderAdvice() {
+  const raw = document.getElementById('adviceData');
+  if (!raw) return;
+  const advice = JSON.parse(raw.textContent);
+  document.getElementById('adviceDate').textContent = advice.date + ' 기준';
+  document.getElementById('adviceBody').innerHTML = advice.items.map(item => `
+    <div class="advice-item ${item.type}">
+      <span class="advice-emoji">${item.emoji}</span>
+      <span>${item.text}</span>
+    </div>
+  `).join('');
+}
+
 // Init
 render();
+renderAdvice();
 </script>
 </body>
 </html>
