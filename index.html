@@ -427,6 +427,11 @@ footer span { color: var(--accent); }
       <div class="stat-sub">주거+통신+구독</div>
     </div>
     <div class="stat-card">
+      <div class="stat-label">식비 비율</div>
+      <div class="stat-value" id="foodRatio">0%</div>
+      <div class="stat-sub" id="foodRatioSub"></div>
+    </div>
+    <div class="stat-card">
       <div class="stat-label">거래 건수</div>
       <div class="stat-value" id="txCount">0</div>
       <div class="stat-sub" id="txCountSub"></div>
@@ -649,6 +654,11 @@ function render() {
   const fixedExpense = md.filter(d=>d.type==='expense' && FIXED_CATEGORIES.includes(d.category)).reduce((s,d)=>s+d.amount,0);
   const fixedRatio = expense > 0 ? ((fixedExpense / expense) * 100).toFixed(1) : 0;
   document.getElementById('fixedRatio').textContent = fixedRatio + '%';
+
+  const foodExpense = md.filter(d=>d.type==='expense' && d.category==='식비').reduce((s,d)=>s+d.amount,0);
+  const foodRatio = expense > 0 ? ((foodExpense / expense) * 100).toFixed(1) : 0;
+  document.getElementById('foodRatio').textContent = foodRatio + '%';
+  document.getElementById('foodRatioSub').textContent = foodExpense > 0 ? fmt(foodExpense) : '식비 없음';
 
   document.getElementById('txCount').textContent = md.length;
   document.getElementById('txCountSub').textContent = `수입 ${md.filter(d=>d.type==='income').length}건 / 지출 ${md.filter(d=>d.type==='expense').length}건`;
