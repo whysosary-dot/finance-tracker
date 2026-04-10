@@ -233,6 +233,7 @@ tr:hover td { background: rgba(99,102,241,0.03); }
 }
 .food-bar-segment.grocery { background: #10b981; }
 .food-bar-segment.eating-out { background: #ef4444; }
+.food-bar-segment.baby-food { background: #f59e0b; }
 .food-bar-labels {
   display: flex;
   justify-content: space-between;
@@ -240,7 +241,7 @@ tr:hover td { background: rgba(99,102,241,0.03); }
   color: var(--text-muted);
 }
 .food-bar-labels strong { color: var(--text); }
-.food-detail-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.food-detail-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .food-detail-card {
   display: flex;
   align-items: center;
@@ -265,6 +266,8 @@ tr:hover td { background: rgba(99,102,241,0.03); }
   .food-detail-cards { grid-template-columns: 1fr; }
   .food-detail-value { font-size: 18px; }
   .food-bar { height: 28px; }
+  .food-bar-labels { flex-wrap: wrap; gap: 6px; justify-content: flex-start; }
+  .food-label { font-size: 12px; }
 }
 
 /* AI 조언 카드 */
@@ -499,16 +502,18 @@ footer span { color: var(--accent); }
   <!-- 식비 분석 -->
   <div class="food-analysis">
     <div class="chart-card" style="flex:1;">
-      <h3>식비 분석: 외식 vs 식재료</h3>
+      <h3>식비 분석</h3>
       <div class="food-stats">
         <div class="food-bar-wrapper">
           <div class="food-bar">
-            <div class="food-bar-segment grocery" id="groceryBar" style="width:100%"></div>
+            <div class="food-bar-segment grocery" id="groceryBar" style="width:0%"></div>
             <div class="food-bar-segment eating-out" id="eatingOutBar" style="width:0%"></div>
+            <div class="food-bar-segment baby-food" id="babyFoodBar" style="width:0%"></div>
           </div>
           <div class="food-bar-labels">
-            <span class="food-label grocery-label">식재료 <strong id="groceryPct">0%</strong></span>
-            <span class="food-label eatingout-label">외식 <strong id="eatingOutPct">0%</strong></span>
+            <span class="food-label grocery-label">🥬 식재료 <strong id="groceryPct">0%</strong></span>
+            <span class="food-label eatingout-label">🍽 외식 <strong id="eatingOutPct">0%</strong></span>
+            <span class="food-label babyfood-label">🍼 아기 <strong id="babyFoodPct">0%</strong></span>
           </div>
         </div>
         <div class="food-detail-cards">
@@ -526,6 +531,14 @@ footer span { color: var(--accent); }
               <div class="food-detail-label">외식 / 배달</div>
               <div class="food-detail-value" id="eatingOutTotal">₩0</div>
               <div class="food-detail-sub" id="eatingOutCount">0건</div>
+            </div>
+          </div>
+          <div class="food-detail-card">
+            <div class="food-detail-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;">🍼</div>
+            <div class="food-detail-info">
+              <div class="food-detail-label">아기 식비</div>
+              <div class="food-detail-value" id="babyFoodTotal">₩0</div>
+              <div class="food-detail-sub" id="babyFoodCount">0건</div>
             </div>
           </div>
         </div>
@@ -594,7 +607,7 @@ footer span { color: var(--accent); }
 -->
 <script id="financeData" type="application/json">
 [
-  {"date":"2026-04-10","type":"expense","category":"육아용품","description":"쿠팡 - 파스퇴르 위드맘 100일 제왕 분유 750g 3개","amount":84140},
+  {"date":"2026-04-10","type":"expense","category":"식비","sub":"아기식비","description":"쿠팡 - 파스퇴르 위드맘 100일 제왕 분유 750g 3개","amount":84140},
   {"date":"2026-04-10","type":"expense","category":"통신비","description":"SMS 서비스 요금 (SMS110***62435)","amount":1140},
   {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 곰곰 냉동 흰다리 새우살 600g","amount":13790},
   {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 충남오감 대추방울토마토 1kg","amount":8990},
@@ -903,24 +916,30 @@ function renderCharts(y, m, md) {
 // ===== FOOD ANALYSIS =====
 function renderFoodAnalysis(md) {
   const foodItems = md.filter(d => d.type === 'expense' && d.category === '식비');
-  const grocery = foodItems.filter(d => d.sub === '식재료');
+  const grocery  = foodItems.filter(d => d.sub === '식재료');
   const eatingOut = foodItems.filter(d => d.sub === '외식');
+  const babyFood  = foodItems.filter(d => d.sub === '아기식비');
 
-  const groceryAmt = grocery.reduce((s,d) => s + d.amount, 0);
+  const groceryAmt   = grocery.reduce((s,d) => s + d.amount, 0);
   const eatingOutAmt = eatingOut.reduce((s,d) => s + d.amount, 0);
-  const total = groceryAmt + eatingOutAmt;
+  const babyFoodAmt  = babyFood.reduce((s,d) => s + d.amount, 0);
+  const total = groceryAmt + eatingOutAmt + babyFoodAmt;
 
-  const groceryPct = total > 0 ? (groceryAmt / total * 100) : 0;
-  const eatingOutPct = total > 0 ? (eatingOutAmt / total * 100) : 0;
+  const pct = v => total > 0 ? (v / total * 100).toFixed(0) + '%' : '0%';
+  const w   = v => total > 0 ? (v / total * 100) + '%' : '0%';
 
-  document.getElementById('groceryBar').style.width = groceryPct + '%';
-  document.getElementById('eatingOutBar').style.width = eatingOutPct + '%';
-  document.getElementById('groceryPct').textContent = groceryPct.toFixed(0) + '%';
-  document.getElementById('eatingOutPct').textContent = eatingOutPct.toFixed(0) + '%';
-  document.getElementById('groceryTotal').textContent = fmt(groceryAmt);
+  document.getElementById('groceryBar').style.width    = w(groceryAmt);
+  document.getElementById('eatingOutBar').style.width  = w(eatingOutAmt);
+  document.getElementById('babyFoodBar').style.width   = w(babyFoodAmt);
+  document.getElementById('groceryPct').textContent    = pct(groceryAmt);
+  document.getElementById('eatingOutPct').textContent  = pct(eatingOutAmt);
+  document.getElementById('babyFoodPct').textContent   = pct(babyFoodAmt);
+  document.getElementById('groceryTotal').textContent  = fmt(groceryAmt);
   document.getElementById('eatingOutTotal').textContent = fmt(eatingOutAmt);
-  document.getElementById('groceryCount').textContent = grocery.length + '건';
+  document.getElementById('babyFoodTotal').textContent = fmt(babyFoodAmt);
+  document.getElementById('groceryCount').textContent  = grocery.length + '건';
   document.getElementById('eatingOutCount').textContent = eatingOut.length + '건';
+  document.getElementById('babyFoodCount').textContent = babyFood.length + '건';
 }
 
 // ===== ADVICE RENDER =====
