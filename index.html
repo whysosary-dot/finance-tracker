@@ -209,6 +209,64 @@ tr:hover td { background: rgba(99,102,241,0.03); }
 }
 .empty-state p { margin-top: 8px; font-size: 14px; }
 
+/* 식비 분석 */
+.food-analysis { margin-bottom: 32px; }
+.food-stats { display: flex; flex-direction: column; gap: 20px; }
+.food-bar-wrapper { display: flex; flex-direction: column; gap: 8px; }
+.food-bar {
+  display: flex;
+  height: 32px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.food-bar-segment {
+  height: 100%;
+  transition: width 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  min-width: 0;
+}
+.food-bar-segment.grocery { background: #10b981; }
+.food-bar-segment.eating-out { background: #ef4444; }
+.food-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.food-bar-labels strong { color: var(--text); }
+.food-detail-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.food-detail-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+.food-detail-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.food-detail-info { display: flex; flex-direction: column; gap: 2px; }
+.food-detail-label { font-size: 12px; color: var(--text-muted); }
+.food-detail-value { font-size: 20px; font-weight: 700; color: var(--text); }
+.food-detail-sub { font-size: 11px; color: var(--text-muted); }
+
+@media (max-width: 480px) {
+  .food-detail-cards { grid-template-columns: 1fr; }
+  .food-detail-value { font-size: 18px; }
+  .food-bar { height: 28px; }
+}
+
 /* AI 조언 카드 */
 .advice-card {
   background: var(--card);
@@ -438,6 +496,43 @@ footer span { color: var(--accent); }
     </div>
   </div>
 
+  <!-- 식비 분석 -->
+  <div class="food-analysis">
+    <div class="chart-card" style="flex:1;">
+      <h3>식비 분석: 외식 vs 식재료</h3>
+      <div class="food-stats">
+        <div class="food-bar-wrapper">
+          <div class="food-bar">
+            <div class="food-bar-segment grocery" id="groceryBar" style="width:100%"></div>
+            <div class="food-bar-segment eating-out" id="eatingOutBar" style="width:0%"></div>
+          </div>
+          <div class="food-bar-labels">
+            <span class="food-label grocery-label">식재료 <strong id="groceryPct">0%</strong></span>
+            <span class="food-label eatingout-label">외식 <strong id="eatingOutPct">0%</strong></span>
+          </div>
+        </div>
+        <div class="food-detail-cards">
+          <div class="food-detail-card">
+            <div class="food-detail-icon" style="background:rgba(16,185,129,0.1);color:#10b981;">🥬</div>
+            <div class="food-detail-info">
+              <div class="food-detail-label">식재료 / 장보기</div>
+              <div class="food-detail-value" id="groceryTotal">₩0</div>
+              <div class="food-detail-sub" id="groceryCount">0건</div>
+            </div>
+          </div>
+          <div class="food-detail-card">
+            <div class="food-detail-icon" style="background:rgba(239,68,68,0.1);color:#ef4444;">🍽</div>
+            <div class="food-detail-info">
+              <div class="food-detail-label">외식 / 배달</div>
+              <div class="food-detail-value" id="eatingOutTotal">₩0</div>
+              <div class="food-detail-sub" id="eatingOutCount">0건</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- AI 소비 조언 -->
   <div class="advice-card" id="adviceCard">
     <div class="advice-header">
@@ -501,11 +596,11 @@ footer span { color: var(--accent); }
 [
   {"date":"2026-04-10","type":"expense","category":"육아용품","description":"쿠팡 - 파스퇴르 위드맘 100일 제왕 분유 750g 3개","amount":84140},
   {"date":"2026-04-10","type":"expense","category":"통신비","description":"SMS 서비스 요금 (SMS110***62435)","amount":1140},
-  {"date":"2026-04-10","type":"expense","category":"식비","description":"쿠팡 로켓프레시 - 곰곰 냉동 흰다리 새우살 600g","amount":13790},
-  {"date":"2026-04-10","type":"expense","category":"식비","description":"쿠팡 로켓프레시 - 충남오감 대추방울토마토 1kg","amount":8990},
-  {"date":"2026-04-10","type":"expense","category":"식비","description":"쿠팡 로켓프레시 - 국내산 깐마늘 80g","amount":1130},
-  {"date":"2026-04-10","type":"expense","category":"식비","description":"쿠팡 로켓프레시 - 올리타리아 엑스트라버진 올리브유 1L","amount":20900},
-  {"date":"2026-04-10","type":"expense","category":"식비","description":"쿠팡 로켓프레시 - 참크래커 280g 2개","amount":6000},
+  {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 곰곰 냉동 흰다리 새우살 600g","amount":13790},
+  {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 충남오감 대추방울토마토 1kg","amount":8990},
+  {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 국내산 깐마늘 80g","amount":1130},
+  {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 올리타리아 엑스트라버진 올리브유 1L","amount":20900},
+  {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 참크래커 280g 2개","amount":6000},
   {"date":"2026-04-10","type":"expense","category":"주방용품","description":"쿠팡 - 칼딘 양면 스테인리스 계량 베이킹 스푼","amount":3990},
   {"date":"2026-04-10","type":"expense","category":"생활용품","description":"쿠팡 - AC100 갈색 투명 디스펜서 100ml 4세트","amount":5900},
   {"date":"2026-04-10","type":"expense","category":"주방용품","description":"쿠팡 - 코멧 키친 오븐글라스 내열유리 계량컵 500ml","amount":5890},
@@ -529,7 +624,7 @@ const FIXED_CATEGORIES = ['주거비','통신비','구독서비스'];
     기타수입      - 위에 해당 없는 수입
 
   [지출]
-    식비         - 식당, 배달, 마트 식품, 편의점 식품
+    식비         - sub 필드로 "식재료"(마트,쿠팡,장보기) / "외식"(식당,배달,편의점 도시락) 구분 필수
     카페/음료     - 카페, 음료, 디저트
     교통비        - 대중교통, 주유, 주차, 택시, 항공/KTX
     주거비        - 월세, 관리비, 공과금(전기/가스/수도)
@@ -664,6 +759,7 @@ function render() {
   document.getElementById('txCountSub').textContent = `수입 ${md.filter(d=>d.type==='income').length}건 / 지출 ${md.filter(d=>d.type==='expense').length}건`;
 
   renderCharts(y, m, md);
+  renderFoodAnalysis(md);
   renderTable();
 
   document.getElementById('lastUpdate').textContent = new Date().toLocaleDateString('ko-KR');
@@ -802,6 +898,29 @@ function renderCharts(y, m, md) {
       }
     }
   });
+}
+
+// ===== FOOD ANALYSIS =====
+function renderFoodAnalysis(md) {
+  const foodItems = md.filter(d => d.type === 'expense' && d.category === '식비');
+  const grocery = foodItems.filter(d => d.sub === '식재료');
+  const eatingOut = foodItems.filter(d => d.sub === '외식');
+
+  const groceryAmt = grocery.reduce((s,d) => s + d.amount, 0);
+  const eatingOutAmt = eatingOut.reduce((s,d) => s + d.amount, 0);
+  const total = groceryAmt + eatingOutAmt;
+
+  const groceryPct = total > 0 ? (groceryAmt / total * 100) : 0;
+  const eatingOutPct = total > 0 ? (eatingOutAmt / total * 100) : 0;
+
+  document.getElementById('groceryBar').style.width = groceryPct + '%';
+  document.getElementById('eatingOutBar').style.width = eatingOutPct + '%';
+  document.getElementById('groceryPct').textContent = groceryPct.toFixed(0) + '%';
+  document.getElementById('eatingOutPct').textContent = eatingOutPct.toFixed(0) + '%';
+  document.getElementById('groceryTotal').textContent = fmt(groceryAmt);
+  document.getElementById('eatingOutTotal').textContent = fmt(eatingOutAmt);
+  document.getElementById('groceryCount').textContent = grocery.length + '건';
+  document.getElementById('eatingOutCount').textContent = eatingOut.length + '건';
 }
 
 // ===== ADVICE RENDER =====
