@@ -2,25 +2,30 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f5f6fa">
 <title>가계부 - Personal Finance Tracker</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #0f1117;
-  --card: #1a1d27;
-  --card-hover: #22263a;
-  --border: #2a2e3f;
-  --text: #e4e6ef;
-  --text-muted: #8b8fa3;
-  --income: #4ade80;
-  --income-bg: rgba(74,222,128,0.12);
-  --expense: #f87171;
-  --expense-bg: rgba(248,113,113,0.12);
-  --balance: #60a5fa;
-  --balance-bg: rgba(96,165,250,0.12);
-  --accent: #818cf8;
-  --accent-bg: rgba(129,140,248,0.12);
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --card-hover: #f8f9fc;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --income: #10b981;
+  --income-bg: rgba(16,185,129,0.1);
+  --expense: #ef4444;
+  --expense-bg: rgba(239,68,68,0.1);
+  --balance: #3b82f6;
+  --balance-bg: rgba(59,130,246,0.1);
+  --accent: #6366f1;
+  --accent-bg: rgba(99,102,241,0.08);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
@@ -29,6 +34,8 @@ body {
   color: var(--text);
   min-height: 100vh;
   padding: 0;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
 
@@ -44,7 +51,7 @@ header {
 header h1 {
   font-size: 28px;
   font-weight: 700;
-  background: linear-gradient(135deg, #818cf8, #60a5fa);
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -82,9 +89,10 @@ header h1 {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
-  transition: transform 0.2s, border-color 0.2s;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .card-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
 .card-value { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
 .card-value.income { color: var(--income); }
@@ -113,6 +121,7 @@ header h1 {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
+  box-shadow: var(--shadow);
 }
 .chart-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
 .chart-container { position: relative; width: 100%; }
@@ -131,6 +140,7 @@ header h1 {
   border-radius: 16px;
   padding: 20px;
   text-align: center;
+  box-shadow: var(--shadow);
 }
 .stat-card .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); margin: 8px 0 4px; }
 .stat-card .stat-label { font-size: 13px; color: var(--text-muted); }
@@ -143,6 +153,8 @@ header h1 {
   border-radius: 16px;
   padding: 24px;
   overflow-x: auto;
+  box-shadow: var(--shadow);
+  -webkit-overflow-scrolling: touch;
 }
 .table-header {
   display: flex;
@@ -169,7 +181,7 @@ table { width: 100%; border-collapse: collapse; }
 th { text-align: left; padding: 12px 16px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
 td { padding: 14px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,0.02); }
+tr:hover td { background: rgba(99,102,241,0.03); }
 .badge {
   padding: 3px 10px;
   border-radius: 6px;
@@ -205,12 +217,90 @@ footer {
 }
 footer span { color: var(--accent); }
 
-/* Responsive */
+/* iPad (768px - 1024px) */
+@media (max-width: 1024px) {
+  .container { padding: 20px 16px; }
+  .summary-cards { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .charts-grid { gap: 12px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .card { padding: 20px; }
+  .card-value { font-size: 24px; }
+  .chart-card { padding: 20px; }
+}
+
+/* iPad Mini / Small Tablet (600px - 768px) */
 @media (max-width: 768px) {
   .charts-grid { grid-template-columns: 1fr; }
-  header h1 { font-size: 22px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  header h1 { font-size: 24px; }
   .card-value { font-size: 22px; }
+}
+
+/* iPhone (max-width: 480px) */
+@media (max-width: 480px) {
   .container { padding: 16px 12px; }
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  header h1 { font-size: 22px; }
+  .month-nav { width: 100%; justify-content: space-between; padding: 10px 16px; }
+  .month-nav span { font-size: 15px; }
+  .month-nav button { font-size: 20px; padding: 6px 12px; min-height: 44px; min-width: 44px; }
+
+  .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .card { padding: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .card-icon { width: 36px; height: 36px; font-size: 16px; margin-bottom: 0; margin-right: 12px; }
+  .card-label { font-size: 12px; margin-bottom: 0; flex: 1; }
+  .card-value { font-size: 22px; width: 100%; }
+  .card-change { font-size: 11px; }
+
+  .charts-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 20px; }
+  .chart-card { padding: 16px; }
+  .chart-card h3 { font-size: 14px; margin-bottom: 12px; }
+  .chart-container.doughnut { max-width: 240px; }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card { padding: 14px 10px; }
+  .stat-card .stat-value { font-size: 20px; }
+  .stat-card .stat-label { font-size: 11px; }
+  .stat-card .stat-sub { font-size: 10px; }
+
+  .table-card { padding: 16px 12px; border-radius: 12px; }
+  .table-header { margin-bottom: 12px; }
+  .table-header h3 { font-size: 14px; }
+  .filter-btn { padding: 8px 12px; font-size: 12px; min-height: 36px; }
+  th { padding: 10px 8px; font-size: 11px; }
+  td { padding: 12px 8px; font-size: 13px; }
+  .badge { padding: 2px 6px; font-size: 11px; }
+  .category-tag { padding: 2px 6px; font-size: 11px; }
+
+  footer { padding: 16px; font-size: 11px; margin-top: 20px; }
+}
+
+/* iPhone SE / Very small screens */
+@media (max-width: 375px) {
+  .container { padding: 12px 8px; }
+  .card-value { font-size: 20px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .stat-card .stat-value { font-size: 18px; }
+  .chart-container.doughnut { max-width: 200px; }
+}
+
+/* Safe area for notched iPhones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  .container { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
 }
 </style>
 </head>
@@ -353,7 +443,7 @@ footer span { color: var(--accent); }
 
 <script>
 // ===== CORE ENGINE =====
-const COLORS = ['#818cf8','#60a5fa','#4ade80','#fbbf24','#f87171','#a78bfa','#34d399','#fb923c','#e879f9','#38bdf8','#facc15','#f472b6'];
+const COLORS = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#14b8a6','#f97316','#d946ef','#0ea5e9','#eab308','#ec4899'];
 const FIXED_CATEGORIES = ['주거비','통신비','구독서비스'];
 
 let data = JSON.parse(document.getElementById('financeData').textContent);
@@ -502,8 +592,8 @@ function renderCharts(y, m, md) {
   Object.values(charts).forEach(c => c.destroy());
   charts = {};
 
-  Chart.defaults.color = '#8b8fa3';
-  Chart.defaults.borderColor = '#2a2e3f';
+  Chart.defaults.color = '#6b7280';
+  Chart.defaults.borderColor = '#e5e7eb';
 
   // Expense Doughnut
   const expCat = groupByCategory(md.filter(d=>d.type==='expense'));
@@ -551,15 +641,15 @@ function renderCharts(y, m, md) {
     data: {
       labels: months.map(mm=>mm.label),
       datasets: [
-        { label: '수입', data: trendIncome, backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 6 },
-        { label: '지출', data: trendExpense, backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 6 }
+        { label: '수입', data: trendIncome, backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
+        { label: '지출', data: trendExpense, backgroundColor: 'rgba(239,68,68,0.75)', borderRadius: 6 }
       ]
     },
     options: {
       responsive: true,
       plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 8 } } },
       scales: {
-        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#2a2e3f' } },
+        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#f0f0f0' } },
         x: { grid: { display: false } }
       }
     }
@@ -585,8 +675,8 @@ function renderCharts(y, m, md) {
       datasets: [{
         label: '누적 잔액',
         data: dailyBalances,
-        borderColor: '#60a5fa',
-        backgroundColor: 'rgba(96,165,250,0.1)',
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.08)',
         fill: true,
         tension: 0.3,
         pointRadius: 2,
@@ -597,7 +687,7 @@ function renderCharts(y, m, md) {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#2a2e3f' } },
+        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#f0f0f0' } },
         x: { grid: { display: false }, ticks: { maxTicksToLimit: 10 } }
       }
     }
