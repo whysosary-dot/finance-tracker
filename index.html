@@ -23,6 +23,8 @@
   --income-bg: rgba(16,185,129,0.1);
   --expense: #ef4444;
   --expense-bg: rgba(239,68,68,0.1);
+  --savings: #f59e0b;
+  --savings-bg: rgba(245,158,11,0.1);
   --balance: #3b82f6;
   --balance-bg: rgba(59,130,246,0.1);
   --accent: #6366f1;
@@ -83,7 +85,7 @@ header h1 {
 /* Summary Cards */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -100,6 +102,7 @@ header h1 {
 .card-value { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
 .card-value.income { color: var(--income); }
 .card-value.expense { color: var(--expense); }
+.card-value.savings { color: var(--savings); }
 .card-value.balance { color: var(--balance); }
 .card-change { font-size: 12px; padding: 3px 8px; border-radius: 6px; display: inline-block; }
 .card-change.up { background: var(--income-bg); color: var(--income); }
@@ -110,6 +113,7 @@ header h1 {
 }
 .card-icon.income-icon { background: var(--income-bg); }
 .card-icon.expense-icon { background: var(--expense-bg); }
+.card-icon.savings-icon { background: var(--savings-bg); }
 .card-icon.balance-icon { background: var(--balance-bg); }
 
 /* Charts Grid */
@@ -275,8 +279,10 @@ tr:hover td { background: rgba(99,102,241,0.03); }
 }
 .badge.income { background: var(--income-bg); color: var(--income); }
 .badge.expense { background: var(--expense-bg); color: var(--expense); }
+.badge.savings { background: var(--savings-bg); color: var(--savings); }
 .amount.income { color: var(--income); font-weight: 600; }
 .amount.expense { color: var(--expense); font-weight: 600; }
+.amount.savings { color: var(--savings); font-weight: 600; }
 .category-tag {
   padding: 3px 10px;
   border-radius: 6px;
@@ -410,7 +416,7 @@ footer span { color: var(--accent); }
 /* iPad (768px - 1024px) */
 @media (max-width: 1024px) {
   .container { padding: 20px 16px; }
-  .summary-cards { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .summary-cards { grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .charts-grid { gap: 12px; }
   .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .card { padding: 20px; }
@@ -523,6 +529,12 @@ footer span { color: var(--accent); }
       <div class="card-label">이번 달 지출</div>
       <div class="card-value expense" id="totalExpense">₩0</div>
       <div class="card-change" id="expenseChange"></div>
+    </div>
+    <div class="card">
+      <div class="card-icon savings-icon">↗</div>
+      <div class="card-label">이번 달 저축</div>
+      <div class="card-value savings" id="totalSavings">₩0</div>
+      <div class="card-change" id="savingsChange"></div>
     </div>
     <div class="card">
       <div class="card-icon balance-icon">=</div>
@@ -668,6 +680,7 @@ footer span { color: var(--accent); }
         <button class="filter-btn active" onclick="setFilter('all', this)">전체</button>
         <button class="filter-btn" onclick="setFilter('income', this)">수입</button>
         <button class="filter-btn" onclick="setFilter('expense', this)">지출</button>
+        <button class="filter-btn" onclick="setFilter('savings', this)">저축</button>
       </div>
     </div>
     <table>
@@ -699,7 +712,8 @@ footer span { color: var(--accent); }
     {"type":"warning","emoji":"👶","text":"아기 관련 지출(분유 ₩84,140 + 의류 ₩78,270 + 옆잠베개 ₩90,000 + 백일풍선 ₩24,700 + 모자 ₩31,600 + 양말 ₩19,700) 합계 ₩328,410으로 이달 전체의 56%입니다. 백일 준비와 여름옷 시즌 전환 시기로 일시적 지출 증가입니다."},
     {"type":"positive","emoji":"🥬","text":"식재료(₩89,640) 직접 조리 비율이 높습니다. 외식(우마이타코야끼 배달 ₩22,400)이 첫 발생했지만 전체 식비의 19% 수준으로 양호합니다."},
     {"type":"tip","emoji":"🏥","text":"이달 의료비 ₩10,200(성인 내과 + 소아과 + 약국). 실손보험 청구 가능한지 확인하세요."},
-    {"type":"warning","emoji":"📊","text":"수입 내역이 없어 잔액이 마이너스입니다(누적 지출 ₩608,200). 급여 등 수입을 추가해 주시면 저축률 분석이 가능합니다."}
+    {"type":"positive","emoji":"🏦","text":"주택청약 ₩20,000 저축 중입니다. 수입 내역을 추가하시면 저축률을 정확히 분석할 수 있습니다."},
+    {"type":"warning","emoji":"📊","text":"수입 내역이 없어 잔액이 마이너스입니다(지출 ₩588,200 + 저축 ₩20,000). 급여 등 수입을 추가해 주세요."}
   ]
 }
 </script>
@@ -711,7 +725,7 @@ footer span { color: var(--accent); }
 -->
 <script id="financeData" type="application/json">
 [
-  {"date":"2026-04-10","type":"expense","category":"저축","description":"주택청약 납입","amount":20000},
+  {"date":"2026-04-10","type":"savings","category":"주택청약","description":"주택청약 납입","amount":20000},
   {"date":"2026-04-10","type":"expense","category":"식비","sub":"아기식비","description":"쿠팡 - 파스퇴르 위드맘 100일 제왕 분유 750g 3개","amount":84140},
   {"date":"2026-04-10","type":"expense","category":"통신비","description":"SMS 서비스 요금 (SMS110***62435)","amount":1140},
   {"date":"2026-04-10","type":"expense","category":"식비","sub":"식재료","description":"쿠팡 로켓프레시 - 곰곰 냉동 흰다리 새우살 600g","amount":13790},
@@ -856,28 +870,34 @@ function render() {
 
   const income = md.filter(d=>d.type==='income').reduce((s,d)=>s+d.amount,0);
   const expense = md.filter(d=>d.type==='expense').reduce((s,d)=>s+d.amount,0);
-  const balance = income - expense;
+  const savings = md.filter(d=>d.type==='savings').reduce((s,d)=>s+d.amount,0);
+  const balance = income - expense - savings;
   const prevIncome = prevMd.filter(d=>d.type==='income').reduce((s,d)=>s+d.amount,0);
   const prevExpense = prevMd.filter(d=>d.type==='expense').reduce((s,d)=>s+d.amount,0);
+  const prevSavings = prevMd.filter(d=>d.type==='savings').reduce((s,d)=>s+d.amount,0);
 
   document.getElementById('totalIncome').textContent = fmt(income);
   document.getElementById('totalExpense').textContent = fmt(expense);
+  document.getElementById('totalSavings').textContent = fmt(savings);
   document.getElementById('totalBalance').textContent = fmt(balance);
   const balEl = document.getElementById('totalBalance');
   balEl.className = balance >= 0 ? 'card-value balance' : 'card-value expense';
 
   const ic = calcChange(income, prevIncome);
   const ec = calcChange(expense, prevExpense);
-  const bc = calcChange(balance, prevIncome - prevExpense);
+  const sc = calcChange(savings, prevSavings);
+  const bc = calcChange(balance, prevIncome - prevExpense - prevSavings);
   document.getElementById('incomeChange').textContent = ic.text;
   document.getElementById('incomeChange').className = 'card-change ' + ic.cls;
   document.getElementById('expenseChange').textContent = ec.text;
   document.getElementById('expenseChange').className = 'card-change ' + (expense > prevExpense ? 'down' : 'up');
+  document.getElementById('savingsChange').textContent = sc.text;
+  document.getElementById('savingsChange').className = 'card-change ' + sc.cls;
   document.getElementById('balanceChange').textContent = bc.text;
   document.getElementById('balanceChange').className = 'card-change ' + bc.cls;
 
   // Stats
-  const savingsRate = income > 0 ? ((balance / income) * 100).toFixed(1) : 0;
+  const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
   document.getElementById('savingsRate').textContent = savingsRate + '%';
 
   const daysInMonth = new Date(y, m+1, 0).getDate();
@@ -906,7 +926,10 @@ function render() {
   document.getElementById('foodRatioSub').textContent = foodExpense > 0 ? fmt(foodExpense) : '식비 없음';
 
   document.getElementById('txCount').textContent = md.length;
-  document.getElementById('txCountSub').textContent = `수입 ${md.filter(d=>d.type==='income').length}건 / 지출 ${md.filter(d=>d.type==='expense').length}건`;
+  const incCnt = md.filter(d=>d.type==='income').length;
+  const expCnt = md.filter(d=>d.type==='expense').length;
+  const savCnt = md.filter(d=>d.type==='savings').length;
+  document.getElementById('txCountSub').textContent = `수입 ${incCnt}건 / 지출 ${expCnt}건` + (savCnt > 0 ? ` / 저축 ${savCnt}건` : '');
 
   renderCharts(y, m, md);
   renderFoodAnalysis(md);
@@ -936,7 +959,7 @@ function renderTable() {
   tbody.innerHTML = md.map(d => `
     <tr>
       <td>${d.date.slice(5).replace('-','/')}</td>
-      <td><span class="badge ${d.type}">${d.type === 'income' ? '수입' : '지출'}</span></td>
+      <td><span class="badge ${d.type}">${d.type === 'income' ? '수입' : d.type === 'savings' ? '저축' : '지출'}</span></td>
       <td><span class="category-tag">${d.category}</span></td>
       <td>${d.description}</td>
       <td style="text-align:right" class="amount ${d.type}">${d.type === 'income' ? '+' : '-'}${fmt(d.amount)}</td>
@@ -994,6 +1017,7 @@ function renderCharts(y, m, md) {
   }
   const trendIncome = months.map(mm => getMonthData(mm.year, mm.month).filter(d=>d.type==='income').reduce((s,d)=>s+d.amount,0));
   const trendExpense = months.map(mm => getMonthData(mm.year, mm.month).filter(d=>d.type==='expense').reduce((s,d)=>s+d.amount,0));
+  const trendSavings = months.map(mm => getMonthData(mm.year, mm.month).filter(d=>d.type==='savings').reduce((s,d)=>s+d.amount,0));
 
   charts.monthly = new Chart(document.getElementById('monthlyTrend'), {
     type: 'bar',
@@ -1001,7 +1025,8 @@ function renderCharts(y, m, md) {
       labels: months.map(mm=>mm.label),
       datasets: [
         { label: '수입', data: trendIncome, backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 6 },
-        { label: '지출', data: trendExpense, backgroundColor: 'rgba(239,68,68,0.75)', borderRadius: 6 }
+        { label: '지출', data: trendExpense, backgroundColor: 'rgba(239,68,68,0.75)', borderRadius: 6 },
+        { label: '저축', data: trendSavings, backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 6 }
       ]
     },
     options: {
