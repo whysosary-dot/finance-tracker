@@ -234,6 +234,7 @@ tr:hover td { background: rgba(99,102,241,0.03); }
 .food-bar-segment.grocery { background: #10b981; }
 .food-bar-segment.eating-out { background: #ef4444; }
 .food-bar-segment.baby-food { background: #f59e0b; }
+.food-bar-segment.snack { background: #a855f7; }
 .food-bar-labels {
   display: flex;
   justify-content: space-between;
@@ -241,7 +242,7 @@ tr:hover td { background: rgba(99,102,241,0.03); }
   color: var(--text-muted);
 }
 .food-bar-labels strong { color: var(--text); }
-.food-detail-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.food-detail-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .food-detail-card {
   display: flex;
   align-items: center;
@@ -499,6 +500,12 @@ footer span { color: var(--accent); }
     </div>
   </div>
 
+  <!-- 일간 지출 추이 -->
+  <div class="chart-card" style="margin-bottom:32px;">
+    <h3>일간 지출 추이</h3>
+    <div class="chart-container"><canvas id="dailyExpenseChart"></canvas></div>
+  </div>
+
   <!-- 식비 분석 -->
   <div class="food-analysis">
     <div class="chart-card" style="flex:1;">
@@ -509,11 +516,13 @@ footer span { color: var(--accent); }
             <div class="food-bar-segment grocery" id="groceryBar" style="width:0%"></div>
             <div class="food-bar-segment eating-out" id="eatingOutBar" style="width:0%"></div>
             <div class="food-bar-segment baby-food" id="babyFoodBar" style="width:0%"></div>
+            <div class="food-bar-segment snack" id="snackBar" style="width:0%"></div>
           </div>
           <div class="food-bar-labels">
             <span class="food-label grocery-label">🥬 식재료 <strong id="groceryPct">0%</strong></span>
             <span class="food-label eatingout-label">🍽 외식 <strong id="eatingOutPct">0%</strong></span>
             <span class="food-label babyfood-label">🍼 아기 <strong id="babyFoodPct">0%</strong></span>
+            <span class="food-label snack-label">🍪 간식 <strong id="snackPct">0%</strong></span>
           </div>
         </div>
         <div class="food-detail-cards">
@@ -539,6 +548,14 @@ footer span { color: var(--accent); }
               <div class="food-detail-label">아기 식비</div>
               <div class="food-detail-value" id="babyFoodTotal">₩0</div>
               <div class="food-detail-sub" id="babyFoodCount">0건</div>
+            </div>
+          </div>
+          <div class="food-detail-card">
+            <div class="food-detail-icon" style="background:rgba(168,85,247,0.1);color:#a855f7;">🍪</div>
+            <div class="food-detail-info">
+              <div class="food-detail-label">간식 / 베이커리</div>
+              <div class="food-detail-value" id="snackTotal">₩0</div>
+              <div class="food-detail-sub" id="snackCount">0건</div>
             </div>
           </div>
         </div>
@@ -592,10 +609,10 @@ footer span { color: var(--accent); }
 {
   "date": "2026-04-13",
   "items": [
-    {"type":"tip","emoji":"🏥","text":"오늘 소아과(₩2,800)+약국(₩500) 방문이 있었습니다. 실손보험에 가입돼 있다면 영수증 보관 후 청구하세요. 이달 의료비 누적 ₩10,200입니다."},
-    {"type":"warning","emoji":"👶","text":"아기 식비(분유 ₩84,140)+육아용품(의류 ₩78,270) 합계가 ₩162,410으로 이달 전체 지출의 41%입니다. 아기 관련 지출이 가장 큰 비중을 차지하고 있습니다."},
-    {"type":"positive","emoji":"🥬","text":"이달 외식은 호밀호두 베이커리 ₩10,000이 전부입니다. 식재료(₩89,640) 직접 조리 비율이 90%로 식비를 효율적으로 관리하고 있습니다."},
-    {"type":"warning","emoji":"📊","text":"수입 내역이 없어 잔액이 마이너스입니다(누적 지출 ₩399,800). 급여 등 수입을 추가해 주시면 저축률 분석이 가능합니다."}
+    {"type":"warning","emoji":"👶","text":"아기 관련 지출(분유 ₩84,140 + 의류 ₩78,270 + 옆잠배개 ₩90,000) 합계 ₩252,410으로 이달 전체의 51%입니다. 당근마켓 중고 활용은 좋은 전략입니다."},
+    {"type":"positive","emoji":"🥬","text":"식재료(₩89,640) 직접 조리 비율이 높고, 간식(호밀호두 ₩10,000)도 적절합니다. 외식비가 ₩0으로 식비 관리가 매우 효율적입니다."},
+    {"type":"tip","emoji":"🏥","text":"이달 의료비 ₩10,200(성인 내과 + 소아과 + 약국). 실손보험 청구 가능한지 확인하세요."},
+    {"type":"warning","emoji":"📊","text":"수입 내역이 없어 잔액이 마이너스입니다(누적 지출 ₩489,800). 급여 등 수입을 추가해 주시면 저축률 분석이 가능합니다."}
   ]
 }
 </script>
@@ -644,7 +661,8 @@ footer span { color: var(--accent); }
   {"date":"2026-04-13","type":"expense","category":"육아용품","description":"코튼메쉬 반팔내의 유치원쿼카 80호","amount":14170},
   {"date":"2026-04-13","type":"expense","category":"의료/건강","description":"이현미소아과의원 (신한체크)","amount":2800},
   {"date":"2026-04-13","type":"expense","category":"의료/건강","description":"매일약국 (신한체크)","amount":500},
-  {"date":"2026-04-13","type":"expense","category":"식비","sub":"외식","description":"호밀호두 천호점 (신한체크)","amount":10000}
+  {"date":"2026-04-13","type":"expense","category":"식비","sub":"간식","description":"호밀호두 천호점 (신한체크)","amount":10000},
+  {"date":"2026-04-13","type":"expense","category":"육아용품","description":"당근마켓 - 옆잠배개 2개","amount":90000}
 ]
 </script>
 
@@ -901,6 +919,42 @@ function renderCharts(y, m, md) {
     }
   });
 
+  // Daily Expense Bar Chart
+  const dailyExpenseMap = {};
+  md.filter(d=>d.type==='expense').forEach(d => {
+    const day = parseInt(d.date.slice(8));
+    dailyExpenseMap[day] = (dailyExpenseMap[day] || 0) + d.amount;
+  });
+  const daysWithExpense = Object.keys(dailyExpenseMap).map(Number).sort((a,b)=>a-b);
+  const deLabels = daysWithExpense.map(d => d + '일');
+  const deData = daysWithExpense.map(d => dailyExpenseMap[d]);
+  const deAvg = deData.length > 0 ? deData.reduce((a,b)=>a+b,0) / deData.length : 0;
+
+  charts.dailyExpense = new Chart(document.getElementById('dailyExpenseChart'), {
+    type: 'bar',
+    data: {
+      labels: deLabels,
+      datasets: [{
+        label: '일별 지출',
+        data: deData,
+        backgroundColor: deData.map(v => v > deAvg * 1.5 ? 'rgba(239,68,68,0.7)' : 'rgba(99,102,241,0.7)'),
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '₩' + ctx.parsed.y.toLocaleString('ko-KR') } },
+        annotation: undefined
+      },
+      scales: {
+        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#e5e7eb' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
   // Daily Balance Line
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const dailyLabels = [];
@@ -946,11 +1000,13 @@ function renderFoodAnalysis(md) {
   const grocery  = foodItems.filter(d => d.sub === '식재료');
   const eatingOut = foodItems.filter(d => d.sub === '외식');
   const babyFood  = foodItems.filter(d => d.sub === '아기식비');
+  const snack     = foodItems.filter(d => d.sub === '간식');
 
   const groceryAmt   = grocery.reduce((s,d) => s + d.amount, 0);
   const eatingOutAmt = eatingOut.reduce((s,d) => s + d.amount, 0);
   const babyFoodAmt  = babyFood.reduce((s,d) => s + d.amount, 0);
-  const total = groceryAmt + eatingOutAmt + babyFoodAmt;
+  const snackAmt     = snack.reduce((s,d) => s + d.amount, 0);
+  const total = groceryAmt + eatingOutAmt + babyFoodAmt + snackAmt;
 
   const pct = v => total > 0 ? (v / total * 100).toFixed(0) + '%' : '0%';
   const w   = v => total > 0 ? (v / total * 100) + '%' : '0%';
@@ -958,15 +1014,19 @@ function renderFoodAnalysis(md) {
   document.getElementById('groceryBar').style.width    = w(groceryAmt);
   document.getElementById('eatingOutBar').style.width  = w(eatingOutAmt);
   document.getElementById('babyFoodBar').style.width   = w(babyFoodAmt);
+  document.getElementById('snackBar').style.width      = w(snackAmt);
   document.getElementById('groceryPct').textContent    = pct(groceryAmt);
   document.getElementById('eatingOutPct').textContent  = pct(eatingOutAmt);
   document.getElementById('babyFoodPct').textContent   = pct(babyFoodAmt);
+  document.getElementById('snackPct').textContent      = pct(snackAmt);
   document.getElementById('groceryTotal').textContent  = fmt(groceryAmt);
   document.getElementById('eatingOutTotal').textContent = fmt(eatingOutAmt);
   document.getElementById('babyFoodTotal').textContent = fmt(babyFoodAmt);
+  document.getElementById('snackTotal').textContent    = fmt(snackAmt);
   document.getElementById('groceryCount').textContent  = grocery.length + '건';
   document.getElementById('eatingOutCount').textContent = eatingOut.length + '건';
   document.getElementById('babyFoodCount').textContent = babyFood.length + '건';
+  document.getElementById('snackCount').textContent    = snack.length + '건';
 }
 
 // ===== ADVICE RENDER =====
