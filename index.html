@@ -1024,9 +1024,6 @@ function renderCharts(y, m, md) {
   const deCategoryColorMap = {};
   deCategoryList.forEach((cat, i) => { deCategoryColorMap[cat] = COLORS[i % COLORS.length]; });
 
-  const dailyTotals = daysWithExpense.map(day => Object.values(dailyCategoryMap[day]).reduce((a,b)=>a+b,0));
-  const deAvg = dailyTotals.length > 0 ? dailyTotals.reduce((a,b)=>a+b,0) / dailyTotals.length : 0;
-
   const deDatasets = deCategoryList.map((cat, i) => ({
     label: cat,
     data: daysWithExpense.map(day => dailyCategoryMap[day][cat] || 0),
@@ -1037,33 +1034,9 @@ function renderCharts(y, m, md) {
   // 맨 위 dataset에만 borderRadius 적용
   if (deDatasets.length > 0) deDatasets[deDatasets.length - 1].borderRadius = 6;
 
-  const avgLinePlugin = {
-    id: 'avgLine',
-    afterDraw(chart) {
-      if (deAvg <= 0) return;
-      const yScale = chart.scales.y;
-      const ctx = chart.ctx;
-      const yPx = yScale.getPixelForValue(deAvg);
-      ctx.save();
-      ctx.beginPath();
-      ctx.setLineDash([6, 4]);
-      ctx.strokeStyle = 'rgba(239,68,68,0.45)';
-      ctx.lineWidth = 1.5;
-      ctx.moveTo(chart.chartArea.left, yPx);
-      ctx.lineTo(chart.chartArea.right, yPx);
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(239,68,68,0.6)';
-      ctx.font = '11px -apple-system, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText('평균 ' + (deAvg/10000).toFixed(1) + '만', chart.chartArea.right, yPx - 4);
-      ctx.restore();
-    }
-  };
-
   charts.dailyExpense = new Chart(document.getElementById('dailyExpenseChart'), {
     type: 'bar',
     data: { labels: deLabels, datasets: deDatasets },
-    plugins: [avgLinePlugin],
     options: {
       responsive: true,
       scales: {
@@ -1073,7 +1046,7 @@ function renderCharts(y, m, md) {
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 8 }
+          labels: { usePointStyle: true, pointStyle: 'rectRounded', boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 8 }
         },
         tooltip: {
           mode: 'index',
