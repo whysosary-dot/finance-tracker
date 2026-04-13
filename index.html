@@ -130,6 +130,88 @@ header h1 {
 .chart-container { position: relative; width: 100%; }
 .chart-container.doughnut { max-width: 280px; margin: 0 auto; }
 
+/* Daily expense detail panel */
+.daily-detail {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  animation: slideDown 0.25s ease-out;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.daily-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.daily-detail-date {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+}
+.daily-detail-total {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--expense);
+}
+.daily-detail-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.daily-detail-close:hover { background: var(--bg); }
+.daily-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.daily-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.daily-detail-item:last-child { border-bottom: none; }
+.daily-detail-cat {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.daily-detail-desc {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.daily-detail-amt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--expense);
+  white-space: nowrap;
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -394,6 +476,10 @@ footer span { color: var(--accent); }
   .category-tag { padding: 2px 6px; font-size: 11px; }
 
   footer { padding: 16px; font-size: 11px; margin-top: 20px; }
+  .daily-detail-list { max-height: 250px; }
+  .daily-detail-desc { font-size: 12px; }
+  .daily-detail-amt { font-size: 12px; }
+  .daily-detail-cat { font-size: 10px; }
 }
 
 /* iPhone SE / Very small screens */
@@ -504,6 +590,7 @@ footer span { color: var(--accent); }
   <div class="chart-card" style="margin-bottom:32px;">
     <h3>일간 지출 추이</h3>
     <div class="chart-container"><canvas id="dailyExpenseChart"></canvas></div>
+    <div id="dailyExpenseDetail" class="daily-detail" style="display:none;"></div>
   </div>
 
   <!-- 식비 분석 -->
@@ -856,6 +943,8 @@ function renderCharts(y, m, md) {
   // Destroy previous
   Object.values(charts).forEach(c => c.destroy());
   charts = {};
+  const _detailPanel = document.getElementById('dailyExpenseDetail');
+  if (_detailPanel) _detailPanel.style.display = 'none';
 
   Chart.defaults.color = '#6b7280';
   Chart.defaults.borderColor = '#e5e7eb';
@@ -920,38 +1009,109 @@ function renderCharts(y, m, md) {
     }
   });
 
-  // Daily Expense Bar Chart
-  const dailyExpenseMap = {};
+  // Daily Expense Stacked Bar Chart (카테고리 구성 비중)
+  const dailyCategoryMap = {};
+  const dailyExpCategories = new Set();
   md.filter(d=>d.type==='expense').forEach(d => {
     const day = parseInt(d.date.slice(8));
-    dailyExpenseMap[day] = (dailyExpenseMap[day] || 0) + d.amount;
+    if (!dailyCategoryMap[day]) dailyCategoryMap[day] = {};
+    dailyCategoryMap[day][d.category] = (dailyCategoryMap[day][d.category] || 0) + d.amount;
+    dailyExpCategories.add(d.category);
   });
-  const daysWithExpense = Object.keys(dailyExpenseMap).map(Number).sort((a,b)=>a-b);
+  const daysWithExpense = Object.keys(dailyCategoryMap).map(Number).sort((a,b)=>a-b);
   const deLabels = daysWithExpense.map(d => d + '일');
-  const deData = daysWithExpense.map(d => dailyExpenseMap[d]);
-  const deAvg = deData.length > 0 ? deData.reduce((a,b)=>a+b,0) / deData.length : 0;
+  const deCategoryList = [...dailyExpCategories];
+  const deCategoryColorMap = {};
+  deCategoryList.forEach((cat, i) => { deCategoryColorMap[cat] = COLORS[i % COLORS.length]; });
+
+  const dailyTotals = daysWithExpense.map(day => Object.values(dailyCategoryMap[day]).reduce((a,b)=>a+b,0));
+  const deAvg = dailyTotals.length > 0 ? dailyTotals.reduce((a,b)=>a+b,0) / dailyTotals.length : 0;
+
+  const deDatasets = deCategoryList.map((cat, i) => ({
+    label: cat,
+    data: daysWithExpense.map(day => dailyCategoryMap[day][cat] || 0),
+    backgroundColor: COLORS[i % COLORS.length],
+    borderRadius: 0,
+    borderSkipped: false
+  }));
+  // 맨 위 dataset에만 borderRadius 적용
+  if (deDatasets.length > 0) deDatasets[deDatasets.length - 1].borderRadius = 6;
+
+  const avgLinePlugin = {
+    id: 'avgLine',
+    afterDraw(chart) {
+      if (deAvg <= 0) return;
+      const yScale = chart.scales.y;
+      const ctx = chart.ctx;
+      const yPx = yScale.getPixelForValue(deAvg);
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = 'rgba(239,68,68,0.45)';
+      ctx.lineWidth = 1.5;
+      ctx.moveTo(chart.chartArea.left, yPx);
+      ctx.lineTo(chart.chartArea.right, yPx);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(239,68,68,0.6)';
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('평균 ' + (deAvg/10000).toFixed(1) + '만', chart.chartArea.right, yPx - 4);
+      ctx.restore();
+    }
+  };
 
   charts.dailyExpense = new Chart(document.getElementById('dailyExpenseChart'), {
     type: 'bar',
-    data: {
-      labels: deLabels,
-      datasets: [{
-        label: '일별 지출',
-        data: deData,
-        backgroundColor: deData.map(v => v > deAvg * 1.5 ? 'rgba(239,68,68,0.7)' : 'rgba(99,102,241,0.7)'),
-        borderRadius: 6
-      }]
-    },
+    data: { labels: deLabels, datasets: deDatasets },
+    plugins: [avgLinePlugin],
     options: {
       responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => '₩' + ctx.parsed.y.toLocaleString('ko-KR') } },
-        annotation: undefined
-      },
       scales: {
-        y: { ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#e5e7eb' } },
-        x: { grid: { display: false } }
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => (v/10000) + '만' }, grid: { color: '#e5e7eb' } }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 8 }
+        },
+        tooltip: {
+          mode: 'index',
+          callbacks: {
+            title: ctx => ctx[0].label + ' 지출 내역',
+            label: ctx => ctx.parsed.y > 0 ? ctx.dataset.label + ': ₩' + ctx.parsed.y.toLocaleString('ko-KR') : null,
+            footer: ctx => {
+              const total = ctx.reduce((s,c) => s + c.parsed.y, 0);
+              return '합계: ₩' + total.toLocaleString('ko-KR');
+            }
+          }
+        }
+      },
+      onClick: (event, elements, chart) => {
+        const detailDiv = document.getElementById('dailyExpenseDetail');
+        if (!elements.length) { detailDiv.style.display = 'none'; return; }
+        const barIndex = elements[0].index;
+        const day = daysWithExpense[barIndex];
+        const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayTxs = md.filter(d => d.type==='expense' && d.date===dateStr).sort((a,b)=>b.amount-a.amount);
+        const total = dayTxs.reduce((s,t) => s + t.amount, 0);
+        detailDiv.innerHTML = `
+          <div class="daily-detail-header">
+            <span class="daily-detail-date">${m+1}월 ${day}일 지출 내역</span>
+            <span class="daily-detail-total">-${fmt(total)}</span>
+            <button class="daily-detail-close" onclick="document.getElementById('dailyExpenseDetail').style.display='none'">&times;</button>
+          </div>
+          <div class="daily-detail-list">
+            ${dayTxs.map(t => `
+              <div class="daily-detail-item">
+                <span class="daily-detail-cat" style="background:${deCategoryColorMap[t.category]}20;color:${deCategoryColorMap[t.category]}">${t.category}${t.sub ? '/'+t.sub : ''}</span>
+                <span class="daily-detail-desc">${t.description}</span>
+                <span class="daily-detail-amt">-${fmt(t.amount)}</span>
+              </div>
+            `).join('')}
+          </div>`;
+        detailDiv.style.display = 'block';
+        detailDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }
   });
