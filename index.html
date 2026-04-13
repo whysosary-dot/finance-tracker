@@ -917,7 +917,8 @@ function renderTable() {
   const m = currentDate.getMonth();
   let md = getMonthData(y, m);
   if (currentFilter !== 'all') md = md.filter(d => d.type === currentFilter);
-  md.sort((a,b) => new Date(b.date) - new Date(a.date));
+  md = md.map((d, i) => ({...d, _idx: i}));
+  md.sort((a,b) => new Date(b.date) - new Date(a.date) || b._idx - a._idx);
 
   const tbody = document.getElementById('txBody');
   const empty = document.getElementById('emptyState');
