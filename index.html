@@ -621,6 +621,43 @@ footer span { color: var(--accent); font-weight: 600; }
   .chart-container.doughnut { max-width: 210px; }
 }
 
+/* 고정지출 · 변동지출 */
+.fv-bar {
+  display: flex; height: 14px; border-radius: 7px; overflow: hidden;
+  background: var(--line-soft); margin: 14px 0 16px;
+}
+.fv-seg { height: 100%; transition: width .4s ease; }
+.fv-seg.fixed { background: var(--balance); }
+.fv-seg.variable { background: var(--expense); opacity: .75; }
+.fv-summary { display: flex; gap: 12px; margin-bottom: 16px; }
+.fv-box {
+  flex: 1; padding: 12px 14px; border-radius: 12px;
+  background: var(--line-soft);
+}
+.fv-box.fixed { background: var(--balance-bg); }
+.fv-box.variable { background: var(--expense-bg); }
+.fv-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.fv-value { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.3px; }
+.fv-sub { font-size: 11.5px; color: var(--faint); margin-top: 3px; }
+.fv-breakdown { border-top: 1px solid var(--line-soft); padding-top: 4px; }
+.fv-row {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 8px 2px; border-bottom: 1px solid var(--line-soft); font-size: 13px;
+}
+.fv-row:last-child { border-bottom: none; }
+.fv-row-name { font-weight: 600; color: var(--text); white-space: nowrap; min-width: 52px; }
+.fv-row-items {
+  flex: 1; color: var(--faint); font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fv-row-amt { font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fv-empty { color: var(--faint); font-size: 13px; padding: 8px 2px; }
+@media (max-width: 480px) {
+  .fv-summary { flex-direction: row; }
+  .fv-value { font-size: 16px; }
+  .fv-row-items { display: none; }
+}
+
 /* Safe area for notched iPhones */
 @supports (padding: env(safe-area-inset-bottom)) {
   body { padding-bottom: env(safe-area-inset-bottom); }
@@ -727,6 +764,28 @@ footer span { color: var(--accent); font-weight: 600; }
       <div class="stat-value" id="txCount">0</div>
       <div class="stat-sub" id="txCountSub"></div>
     </div>
+  </div>
+
+  <!-- 고정지출 · 변동지출 -->
+  <div class="chart-card" style="margin-bottom:20px;">
+    <h3>고정지출 · 변동지출</h3>
+    <div class="fv-bar">
+      <div class="fv-seg fixed" id="fvFixedBar" style="width:0%"></div>
+      <div class="fv-seg variable" id="fvVarBar" style="width:0%"></div>
+    </div>
+    <div class="fv-summary">
+      <div class="fv-box fixed">
+        <div class="fv-label">📌 고정지출</div>
+        <div class="fv-value" id="fvFixedTotal">₩0</div>
+        <div class="fv-sub" id="fvFixedSub"></div>
+      </div>
+      <div class="fv-box variable">
+        <div class="fv-label">🌊 변동지출</div>
+        <div class="fv-value" id="fvVarTotal">₩0</div>
+        <div class="fv-sub" id="fvVarSub"></div>
+      </div>
+    </div>
+    <div class="fv-breakdown" id="fvBreakdown"></div>
   </div>
 
   <!-- 일간 지출 추이 -->
@@ -6404,7 +6463,28 @@ footer span { color: var(--accent); font-weight: 600; }
 <script>
 // ===== CORE ENGINE =====
 const COLORS = ['#5B7CFA','#9B6BF3','#35B57C','#F2A93B','#E7686D','#45BBD1','#F0834F','#C86BD6','#8FBE4F','#4C9EEB','#E3C63B','#EC6FA1'];
-const FIXED_CATEGORIES = ['주거비','통신비','구독서비스'];
+const FIXED_CATEGORIES = ['주거비','통신비','구독서비스','보험료'];
+// 기타지출 안에 섞여 있는 고정성 항목(세금·대출·적금·정기이체 등)을 설명으로 식별
+const FIXED_KEYWORDS = /대출|재산세|지방세|자동차세|주민세|종부세|세금|적금|자동이체|수수료|연회비|관리비|보험/;
+
+function isFixedExpense(d) {
+  if (d.type !== 'expense') return false;
+  if (FIXED_CATEGORIES.includes(d.category)) return true;
+  if (d.category === '기타지출' && FIXED_KEYWORDS.test(d.description)) return true;
+  return false;
+}
+
+function fixedGroupOf(d) {
+  if (d.category === '구독서비스') return '구독';
+  if (d.category === '보험료') return '보험';
+  if (d.category === '통신비') return '통신';
+  if (d.category === '주거비') return '주거';
+  if (/보험/.test(d.description)) return '보험';
+  if (/대출/.test(d.description)) return '대출';
+  if (/재산세|지방세|자동차세|주민세|종부세|세금/.test(d.description)) return '세금';
+  if (/적금/.test(d.description)) return '적금';
+  return '기타 고정';
+}
 
 /*
   ===== 카테고리 분류 기준 (Claude 참고용) =====
@@ -6558,7 +6638,7 @@ function render() {
     document.getElementById('topCategorySub').textContent = '';
   }
 
-  const fixedExpense = md.filter(d=>d.type==='expense' && FIXED_CATEGORIES.includes(d.category)).reduce((s,d)=>s+d.amount,0);
+  const fixedExpense = md.filter(isFixedExpense).reduce((s,d)=>s+d.amount,0);
   const fixedRatio = expense > 0 ? ((fixedExpense / expense) * 100).toFixed(1) : 0;
   document.getElementById('fixedRatio').textContent = fixedRatio + '%';
 
@@ -6574,6 +6654,7 @@ function render() {
   document.getElementById('txCountSub').textContent = `수입 ${incCnt}건 / 지출 ${expCnt}건` + (savCnt > 0 ? ` / 저축 ${savCnt}건` : '');
 
   renderCharts(y, m, md);
+  renderFixedVar(md, prevMd);
   renderFoodAnalysis(md);
   renderTable();
 
@@ -6849,6 +6930,61 @@ function renderCharts(y, m, md) {
 }
 
 // ===== FOOD ANALYSIS =====
+function renderFixedVar(md, prevMd) {
+  const exp = md.filter(d => d.type === 'expense');
+  const fixed = exp.filter(isFixedExpense);
+  const variable = exp.filter(d => !isFixedExpense(d));
+  const fixedTotal = fixed.reduce((s,d)=>s+d.amount,0);
+  const varTotal = variable.reduce((s,d)=>s+d.amount,0);
+  const total = fixedTotal + varTotal;
+  const fixedPct = total > 0 ? (fixedTotal/total*100) : 0;
+  const varPct = total > 0 ? (varTotal/total*100) : 0;
+
+  document.getElementById('fvFixedBar').style.width = fixedPct + '%';
+  document.getElementById('fvVarBar').style.width = varPct + '%';
+  document.getElementById('fvFixedTotal').textContent = fmt(fixedTotal);
+  document.getElementById('fvVarTotal').textContent = fmt(varTotal);
+
+  const prevFixed = prevMd.filter(isFixedExpense).reduce((s,d)=>s+d.amount,0);
+  const prevVar = prevMd.filter(d=>d.type==='expense' && !isFixedExpense(d)).reduce((s,d)=>s+d.amount,0);
+  const diffTxt = (cur, prev) => {
+    if (prev === 0) return '';
+    const diff = cur - prev;
+    if (diff === 0) return ' · 전월 동일';
+    return ` · 전월 대비 ${diff > 0 ? '+' : '−'}${fmt(Math.abs(diff)).replace('₩','₩')}`;
+  };
+  document.getElementById('fvFixedSub').textContent =
+    `${fixed.length}건 · 지출의 ${fixedPct.toFixed(1)}%` + diffTxt(fixedTotal, prevFixed);
+  document.getElementById('fvVarSub').textContent =
+    `${variable.length}건 · 지출의 ${varPct.toFixed(1)}%` + diffTxt(varTotal, prevVar);
+
+  const box = document.getElementById('fvBreakdown');
+  if (fixed.length === 0) {
+    box.innerHTML = '<div class="fv-empty">이번 달 고정지출 내역이 없습니다</div>';
+    return;
+  }
+  const groups = {};
+  fixed.forEach(d => {
+    const g = fixedGroupOf(d);
+    if (!groups[g]) groups[g] = { total: 0, items: [] };
+    groups[g].total += d.amount;
+    groups[g].items.push(d.description);
+  });
+  const order = ['대출','세금','보험','통신','구독','주거','적금','기타 고정'];
+  box.innerHTML = Object.entries(groups)
+    .sort((a,b) => {
+      const oa = order.indexOf(a[0]), ob = order.indexOf(b[0]);
+      return (oa === -1 ? 99 : oa) - (ob === -1 ? 99 : ob) || b[1].total - a[1].total;
+    })
+    .map(([name, g]) => `
+      <div class="fv-row">
+        <span class="fv-row-name">${name}</span>
+        <span class="fv-row-items">${g.items.join(', ')}</span>
+        <span class="fv-row-amt">${fmt(g.total)}${g.items.length > 1 ? ` <span style="color:var(--faint);font-weight:400;font-size:11px">${g.items.length}건</span>` : ''}</span>
+      </div>
+    `).join('');
+}
+
 function renderFoodAnalysis(md) {
   const foodItems = md.filter(d => d.type === 'expense' && d.category === '식비');
   const grocery  = foodItems.filter(d => d.sub === '식재료');
